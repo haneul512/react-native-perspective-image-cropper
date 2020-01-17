@@ -1,25 +1,55 @@
 #import "CustomCropManager.h"
 #import <React/RCTLog.h>
-
+#import <Photos/Photos.h>
 @implementation CustomCropManager
 
 RCT_EXPORT_MODULE();
 
 RCT_EXPORT_METHOD(crop:(NSDictionary *)points imageUri:(NSString *)imageUri callback:(RCTResponseSenderBlock)callback)
 {
-    NSString *parsedImageUri = [imageUri stringByReplacingOccurrencesOfString:@"file://" withString:@""];
-    NSURL *fileURL = [NSURL fileURLWithPath:parsedImageUri];
-    CIImage *ciImage = [CIImage imageWithContentsOfURL:fileURL];
+    if([imageUri hasPrefix:@"ph://"]) {
+        //NSData *imageData = [NSData dataWithContentsOfURL:imageUri];
+        PHFetchResult* fetchResult = [PHAsset fetchAssetsWithLocalIdentifiers:@[
+         [imageUri stringByReplacingOccurrencesOfString:@"ph://" withString:@""]]
+         options:nil];
+        PHAsset *resultAsset = [fetchResult firstObject];
+        //[resultAsset data]
+        PHImageManager *manager = [PHImageManager defaultManager];
+        PHImageRequestOptions *option = [PHImageRequestOptions new];
+        option.synchronous = YES;
+        [manager requestImageForAsset:resultAsset
+                           targetSize:PHImageManagerMaximumSize
+                          contentMode:PHImageContentModeDefault
+                              options:option
+                        resultHandler:^(UIImage * _Nullable image, NSDictionary * _Nullable info) {
+            
+            CIImage *ciImage = [CIImage imageWithCGImage:image.CGImage];
+            [self crop:points image:ciImage callback:callback];
+            
+           
+        }];
+         
+    }
+    else {
+        NSString *parsedImageUri = [imageUri stringByReplacingOccurrencesOfString:@"file://" withString:@""];
+        NSURL *fileURL = [NSURL fileURLWithPath:parsedImageUri];
+        CIImage *ciImage = [CIImage imageWithContentsOfURL:fileURL];
+        [self crop:points image:ciImage callback:callback];
+    }
     
+    
+}
+
+- (void)crop:(NSDictionary *)points image:(CIImage *)ciImage callback:(RCTResponseSenderBlock)callback {
     CGPoint newLeft = CGPointMake([points[@"topLeft"][@"x"] floatValue], [points[@"topLeft"][@"y"] floatValue]);
     CGPoint newRight = CGPointMake([points[@"topRight"][@"x"] floatValue], [points[@"topRight"][@"y"] floatValue]);
     CGPoint newBottomLeft = CGPointMake([points[@"bottomLeft"][@"x"] floatValue], [points[@"bottomLeft"][@"y"] floatValue]);
     CGPoint newBottomRight = CGPointMake([points[@"bottomRight"][@"x"] floatValue], [points[@"bottomRight"][@"y"] floatValue]);
     
-    newLeft = [self cartesianForPoint:newLeft height:[points[@"height"] floatValue] ];
-    newRight = [self cartesianForPoint:newRight height:[points[@"height"] floatValue] ];
-    newBottomLeft = [self cartesianForPoint:newBottomLeft height:[points[@"height"] floatValue] ];
-    newBottomRight = [self cartesianForPoint:newBottomRight height:[points[@"height"] floatValue] ];
+    newLeft = [self cartesianForPoint:newLeft width:[points[@"width"] floatValue] height:[points[@"height"] floatValue] image:ciImage];
+    newRight = [self cartesianForPoint:newRight width:[points[@"width"] floatValue]  height:[points[@"height"] floatValue] image:ciImage];
+    newBottomLeft = [self cartesianForPoint:newBottomLeft width:[points[@"width"] floatValue]  height:[points[@"height"] floatValue] image:ciImage];
+    newBottomRight = [self cartesianForPoint:newBottomRight width:[points[@"width"] floatValue]  height:[points[@"height"] floatValue] image:ciImage];
     
     
     
@@ -35,13 +65,18 @@ RCT_EXPORT_METHOD(crop:(NSDictionary *)points imageUri:(NSString *)imageUri call
     CIContext *context = [CIContext contextWithOptions:nil];
     CGImageRef cgimage = [context createCGImage:ciImage fromRect:[ciImage extent]];
     UIImage *image = [UIImage imageWithCGImage:cgimage];
-    
-    NSData *imageToEncode = UIImageJPEGRepresentation(image, 0.8);
-    callback(@[[NSNull null], @{@"image": [imageToEncode base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength]}]);
+    if(image) {
+
+        NSData *imageToEncode = UIImageJPEGRepresentation(image, 0.8);
+        callback(@[[NSNull null], @{@"image": [imageToEncode base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength]}]);
+    }
 }
 
-- (CGPoint)cartesianForPoint:(CGPoint)point height:(float)height {
-    return CGPointMake(point.x, height - point.y);
+- (CGPoint)cartesianForPoint:(CGPoint)point width:(float)width height:(float)height image:(CIImage *)image {
+    CGSize size = image.extent.size;
+    float x = size.width * (point.x / width);
+    float y = size.height * (point.y / height);
+    return CGPointMake(x, y);
 }
 
 @end

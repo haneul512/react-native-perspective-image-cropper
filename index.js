@@ -84,13 +84,30 @@ class CustomCrop extends Component {
         );
     }
 
-    componentWillMount() {
+    componentDidMount() {
         Image.getSize(this.props.initialImage, (width, height) => {
-            // get the proportion
-            const proportion = height / width;
-            this.setState({
-                height: (Dimensions.get('window').width - 60) * proportion,
-            });
+            const screenMaxWidth = Dimensions.get('window').width - 60;
+            const screenMaxHeight = Dimensions.get('window').height - 150;
+            if (width > screenMaxWidth || height > screenMaxHeight) {
+                if (width > height) {
+                    this.setState({
+                        height: screenMaxWidth * height / width,
+                        width: screenMaxWidth
+                    });
+                }
+                else {
+                    this.setState({
+                        height: screenMaxHeight,
+                        width: screenMaxHeight * width / height
+                    });
+                }
+            }
+            else {
+                this.setState({
+                    height: height,
+                    width: width
+                });
+            }
         });
     }
 
@@ -136,7 +153,7 @@ class CustomCrop extends Component {
         }];
     }
 
-    crop() {
+    crop(data) {
         const coordinates = {
             topLeft: this.viewCoordinatesToImageCoordinates(this.state.topLeft),
             topRight: this.viewCoordinatesToImageCoordinates(
@@ -151,11 +168,14 @@ class CustomCrop extends Component {
             height: this.state.height,
             width: this.state.width,
         };
+
+        var photoPATH = this.state.image;
         NativeModules.CustomCropManager.crop(
             coordinates,
-            this.state.image,
+            photoPATH,
             (err, res) => this.props.updateImage(res.image, coordinates),
         );
+
     }
 
     updateOverlayString() {
@@ -170,6 +190,12 @@ class CustomCrop extends Component {
         const bottomRightY = this.state.bottomRight.y._value > bottomMax ? bottomMax : this.state.bottomRight.y._value;
         const bottomLeftX = this.state.bottomLeft.x._value < this.state.imageX ? this.state.imageX : this.state.bottomLeft.x._value;
         const bottomLeftY = this.state.bottomLeft.y._value < bottomMax ? this.state.bottomLeft.y._value : bottomMax;
+
+        this.state.topLeft.setValue({ x: topLeftX, y: topLeftY });
+        this.state.topRight.setValue({ x: topRightX, y: topRightY });
+        this.state.bottomLeft.setValue({ x: bottomLeftX, y: bottomLeftY });
+        this.state.bottomRight.setValue({ x: bottomRightX, y: bottomRightY });
+
         this.setState({
             overlayPositions: `${topLeftX},${topLeftY} 
                 ${topRightX},${topRightY} 
@@ -186,11 +212,10 @@ class CustomCrop extends Component {
     }
 
     viewCoordinatesToImageCoordinates(corner) {
+        // return the percentage coordinates
         return {
-            x:
-                (corner.x._value / Dimensions.get('window').width) *
-                this.state.width,
-            y: (corner.y._value / this.state.height) * this.state.height,
+            x: corner.x._value - 30,
+            y: corner.y._value - this.state.imageY,
         };
     }
 
@@ -227,11 +252,14 @@ class CustomCrop extends Component {
                     <Image
                         style={[
                             s(this.props).image,
-                            { height: this.state.height },
+                            {
+                                height: this.state.height,
+                                width: this.state.width,
+                            },
                         ]}
                         onLayout={e => this.onLayout(e)}
                         source={{ uri: this.state.image }}
-                        resizeMode="center"
+                        resizeMode="contain"
                     />
                     <Svg
                         height={Dimensions.get('window').height}
@@ -365,9 +393,7 @@ const s = (props) => ({
         backgroundColor: props.handlerColor || 'blue',
     },
     image: {
-        width: Dimensions.get('window').width - 60,
-        position: 'absolute',
-        left: 30,
+        alignSelf: 'center',
     },
     bottomButton: {
         alignItems: 'center',
