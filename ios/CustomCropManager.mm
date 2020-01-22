@@ -66,9 +66,24 @@ RCT_EXPORT_METHOD(crop:(NSDictionary *)points imageUri:(NSString *)imageUri call
     CGImageRef cgimage = [context createCGImage:ciImage fromRect:[ciImage extent]];
     UIImage *image = [UIImage imageWithCGImage:cgimage];
     if(image) {
+       __block NSString* localId;
+       [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+           PHAssetChangeRequest *changeRequest = [PHAssetChangeRequest creationRequestForAssetFromImage:image];
+           localId = [[changeRequest placeholderForCreatedAsset] localIdentifier];
+           changeRequest.creationDate          = [NSDate date];
+       } completionHandler:^(BOOL success, NSError *error) {
+           if (success) {
+               callback(@[[NSNull null], @{@"image": [NSString stringWithFormat:@"ph://%@",localId]}]);
+               // NSData *imageToEncode = UIImageJPEGRepresentation(image, 0.8);
+               //        callback(@[[NSNull null], @{@"image": [imageToEncode base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength]}]);
 
-        NSData *imageToEncode = UIImageJPEGRepresentation(image, 0.8);
-        callback(@[[NSNull null], @{@"image": [imageToEncode base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength]}]);
+           }
+           else {
+               NSLog(@"error saving to photos: %@", error);
+           }
+       }];
+        //NSData *imageToEncode = UIImageJPEGRepresentation(image, 0.8);
+        //callback(@[[NSNull null], @{@"image": [imageToEncode base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength]}]);
     }
 }
 
@@ -76,6 +91,7 @@ RCT_EXPORT_METHOD(crop:(NSDictionary *)points imageUri:(NSString *)imageUri call
     CGSize size = image.extent.size;
     float x = size.width * (point.x / width);
     float y = size.height * (point.y / height);
+    y = size.height - y;
     return CGPointMake(x, y);
 }
 

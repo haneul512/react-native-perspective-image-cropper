@@ -87,7 +87,7 @@ class CustomCrop extends Component {
     componentDidMount() {
         Image.getSize(this.props.initialImage, (width, height) => {
             const screenMaxWidth = Dimensions.get('window').width - 60;
-            const screenMaxHeight = Dimensions.get('window').height - 150;
+            const screenMaxHeight = Dimensions.get('window').height - 290;
             if (width > screenMaxWidth || height > screenMaxHeight) {
                 if (width > height) {
                     this.setState({
@@ -173,7 +173,15 @@ class CustomCrop extends Component {
         NativeModules.CustomCropManager.crop(
             coordinates,
             photoPATH,
-            (err, res) => this.props.updateImage(res.image, coordinates),
+            (err, res) => {
+                if (err) {
+                    this.props.cropError(err);
+                }
+                else {
+                    this.setState({ image: res.image });
+
+                }
+            }
         );
 
     }
