@@ -179,7 +179,7 @@ class CustomCrop extends Component {
                 }
                 else {
                     this.setState({ image: res.image });
-
+                    this.props.updateImage(res.image);
                 }
             }
         );
