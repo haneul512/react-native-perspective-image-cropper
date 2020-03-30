@@ -24,6 +24,7 @@ RCT_EXPORT_METHOD(crop:(NSDictionary *)points imageUri:(NSString *)imageUri call
                         resultHandler:^(UIImage * _Nullable image, NSDictionary * _Nullable info) {
             
             CIImage *ciImage = [CIImage imageWithCGImage:image.CGImage];
+            ciImage = [ciImage imageByApplyingOrientation:image.imageOrientation];
             [self crop:points image:ciImage callback:callback];
             
            
