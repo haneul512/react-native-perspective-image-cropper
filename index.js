@@ -222,7 +222,7 @@ class CustomCrop extends Component {
     viewCoordinatesToImageCoordinates(corner) {
         // return the percentage coordinates
         return {
-            x: corner.x._value - 30,
+            x: corner.x._value - this.state.imageX,
             y: corner.y._value - this.state.imageY,
         };
     }
