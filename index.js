@@ -88,19 +88,48 @@ class CustomCrop extends Component {
         Image.getSize(this.props.initialImage, (width, height) => {
             const screenMaxWidth = Dimensions.get('window').width - 60;
             const screenMaxHeight = Dimensions.get('window').height - 290;
-            if (width > screenMaxWidth || height > screenMaxHeight) {
-                if (width > height) {
-                    this.setState({
-                        height: screenMaxWidth * height / width,
-                        width: screenMaxWidth
-                    });
+
+            if (width > screenMaxWidth && height < screenMaxHeight) {
+                this.setState({
+                    width: screenMaxWidth,
+                    height: screenMaxWidth * height / width,
+                })
+            }
+            else if (height > screenMaxHeight && width < screenMaxWidth) {
+                this.setState({
+                    height: screenMaxHeight, 
+                    width: screenMaxHeight * width / height,
+                })
+            }
+            else if(height > screenMaxHeight && width > screenMaxWidth) {
+                // if both of dimensions are over the max, first shrink in perspective of width 
+                var newWidth = width;
+                var newHeight = height;
+                if(width > height) {
+                    newWidth = screenMaxWidth;
+                    newHeight = screenMaxWidth * height / width; 
+                    
+                    // check if the shrink was enough to fit. if not, shrink even more
+                    if (newHeight > screenMaxHeight) {
+                        newWidth = screenMaxHeight * newWidth / newHeight;
+                        newHeight = screenMaxHeight; 
+                    }
                 }
                 else {
-                    this.setState({
-                        height: screenMaxHeight,
-                        width: screenMaxHeight * width / height
-                    });
+                    newHeight = screenMaxHeight; 
+                    newWidth = screenMaxHeight * width / height;
+                    
+                    // check if the shrink was enough to fit. if not, shrink even more
+                    if (newWidth > screenMaxWidth) {
+                        newHeight = screenMaxWidth * newHeight / newWidth;
+                        newWidth = screenMaxWidth; 
+                    }
                 }
+
+                this.setState({
+                    height: newHeight,
+                    width: newWidth
+                });
             }
             else {
                 this.setState({
