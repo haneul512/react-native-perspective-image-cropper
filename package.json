@@ -21,7 +21,5 @@
     "react": "16.0.0-alpha.6",
     "react-native": "0.44.3"
   },
-  "dependencies": {
-    "react-native-base64": "0.0.2"
-  }
+  "dependencies": {}
 }

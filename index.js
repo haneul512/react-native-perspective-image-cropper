@@ -5,11 +5,9 @@ import {
     Dimensions,
     Image,
     View,
-    Animated,
-    Platform
+    Animated
 } from 'react-native';
 import Svg, { Polygon } from 'react-native-svg';
-import base64 from 'react-native-base64';
 
 const AnimatedPolygon = Animated.createAnimatedComponent(Polygon);
 
