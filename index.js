@@ -210,12 +210,12 @@ class CustomCrop extends Component {
                 else {
                     if(Platform.OS == 'android') {
                         var img = `data:image/png;base64,${res.image}`;
-                    } 
-                    if(Platform.OS == 'iOS') {
-                        var img = res.image;
+                        this.setState({ image: img });
+                        this.props.updateImage(img);
+                    } else {
+                        this.setState({ image: res.image });
+                        this.props.updateImage(res.image);
                     }
-                    this.setState({ image: img });
-                    this.props.updateImage(img);
                 }
             }
         );
