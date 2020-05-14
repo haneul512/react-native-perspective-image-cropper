@@ -44,6 +44,13 @@ import java.util.List;
 
 public class RNCustomCropModule extends ReactContextBaseJavaModule {
 
+  public Point pointMethod(Point point, double width, double height, double imageWidth, double imageHeight) {
+    double x = imageWidth * (point.x / width);
+    double y = imageHeight * (point.y / height);
+    y = imageHeight - y;
+    return new Point(x, y);
+  }
+
   private final ReactApplicationContext reactContext;
 
   public RNCustomCropModule(ReactApplicationContext reactContext) {
@@ -59,14 +66,18 @@ public class RNCustomCropModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void crop(ReadableMap points, String imageUri, Callback callback) {
-
-    Point tl = new Point(points.getMap("topLeft").getDouble("x"), points.getMap("topLeft").getDouble("y"));
-    Point tr = new Point(points.getMap("topRight").getDouble("x"), points.getMap("topRight").getDouble("y"));
-    Point bl = new Point(points.getMap("bottomLeft").getDouble("x"), points.getMap("bottomLeft").getDouble("y"));
-    Point br = new Point(points.getMap("bottomRight").getDouble("x"), points.getMap("bottomRight").getDouble("y"));
+    Point newLeft = new Point(points.getMap("topLeft").getDouble("x"), points.getMap("topLeft").getDouble("y"));
+    Point newRight = new Point(points.getMap("topRight").getDouble("x"), points.getMap("topRight").getDouble("y"));
+    Point newBottomLeft = new Point(points.getMap("bottomLeft").getDouble("x"), points.getMap("bottomLeft").getDouble("y"));
+    Point newBottomRight = new Point(points.getMap("bottomRight").getDouble("x"), points.getMap("bottomRight").getDouble("y"));
 
     Mat src = Imgcodecs.imread(imageUri.replace("file://", ""), Imgproc.COLOR_BGR2RGB);
     Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2RGB);
+
+    Point tl = pointMethod(newLeft, points.getDouble("width"), points.getDouble("height"), src.size().width, src.size().height);
+    Point tr = pointMethod(newRight, points.getDouble("width"), points.getDouble("height"), src.size().width, src.size().height);
+    Point bl = pointMethod(newBottomLeft, points.getDouble("width"), points.getDouble("height"), src.size().width, src.size().height);
+    Point br = pointMethod(newBottomRight, points.getDouble("width"), points.getDouble("height"), src.size().width, src.size().height);
 
     // boolean ratioAlreadyApplied = tr.x * (src.size().width / 500) < src.size().width;
     // double ratio = ratioAlreadyApplied ? src.size().width / 500 : 1;
@@ -109,5 +120,4 @@ public class RNCustomCropModule extends ReactContextBaseJavaModule {
 
     m.release();
   }
-
 }
